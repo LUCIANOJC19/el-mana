@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Mana - Catálogo Inteligente</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: linear-gradient(rgba(244, 246, 249, 0.4), rgba(244, 246, 249, 0.4)), 
+                                    url('/static/campo.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-custom {
+            background-color: #e67e22;
+            position: relative;
+        }
+        .card-producto {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            background-color: rgba(255, 255, 255, 0.95);
+            overflow: hidden;
+        }
+        .precio-tag {
+            color: #27ae60;
+            font-size: 1.5rem;
+        }
+        .carrito-container {
+            background-color: rgba(255, 255, 255, 0.98);
+            border-radius: 15px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        }
+        .perrito-esquina {
+            position: absolute;
+            bottom: 0;
+            height: 130px;
+            z-index: 1;
+            mix-blend-mode: multiply;
+        }
+        .titulo-seccion {
+            background-color: rgba(3, 1, 1, 0.1);
+            color: #060a07;
+            border-left: 5px solid #020101;
+            padding: 10px 15px;
+            border-radius: 5px;
+        }
+        .btn-seccion {
+            border-radius: 30px;
+            font-size: 1.25rem;
+            padding: 12px 30px;
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body>
+
+    {% if subtotal > 0 %}
+        {% if envio_gratis %}
+            <div class="alert alert-success text-center fw-bold fs-5 mb-0 rounded-0" role="alert" style="position: relative; z-index: 10;">
+                🎉 ¡Felicidades! Superaste los ${{ monto_minimo }}. ¡Tu envío a domicilio es GRATIS dentro de los {{ radio_km }} km! 🚚
+            </div>
+        {% else %}
+            <div class="alert alert-warning text-center fw-bold fs-5 mb-0 rounded-0" role="alert" style="position: relative; z-index: 10;">
+                💡 ¡Te faltan solo ${{ restante_envio }} más para tener Envío GRATIS (Mínimo: ${{ monto_minimo }})! 🛵
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="bg-dark text-white text-center p-3 fw-bold fs-5" style="position: relative; z-index: 10;">
+            📦 ¡Envíos GRATIS a domicilio dentro de los {{ radio_km }} km a partir de compras de ${{ monto_minimo }}!
+        </div>
+    {% endif %}
+
+    <nav class="navbar navbar-dark navbar-custom mb-5 shadow-sm py-3" style="overflow: hidden;">
+        <img src="{{ url_for('static', filename='perrito_izq.png.jpeg') }}" alt="Perrito Izquierda" class="perrito-esquina d-none d-md-block" style="left: 10px;">
+
+        <div class="container d-flex align-items-center justify-content-center" style="position: relative; z-index: 2;">
+            <div class="me-4">
+                {% if session.get('admin') %}
+                    <a href="{{ url_for('admin') }}" class="btn btn-outline-light btn-sm fw-bold rounded-pill px-3 py-2">⚙️ Panel Admin</a>
+                {% endif %}
+            </div>
+            
+            <a class="navbar-brand fw-bold fs-1 d-flex align-items-center justify-content-center m-0" href="/" style="text-decoration: none;">
+                <img src="{{ url_for('static', filename='logo.npg.jpeg') }}" 
+                     alt="Logo El Mana" 
+                     class="me-3 rounded-circle shadow-lg" 
+                     style="width: 150px; height: 150px; object-fit: cover; border: 4px solid white;">
+                El Mana
+            </a>
+
+            <div class="ms-4">
+                {% if session.get('admin') %}
+                    <a href="/agregar-producto" class="btn btn-light fw-bold text-dark border-0 py-2 px-3 shadow-sm rounded-pill">
+                        ➕ Cargar Producto
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <img src="{{ url_for('static', filename='perrito_der.png.jpeg') }}" alt="Perrito Derecha" class="perrito-esquina d-none d-md-block" style="right: 10px;">
+    </nav>
+
+    <div class="container mb-5" style="position: relative; z-index: 2;">
+        <div class="row justify-content-center">
+            <div class="col-12 text-center mb-4">
+                <a href="/?dep=Mercaderia" 
+                   class="btn btn-seccion fw-bold me-3 shadow-sm {% if departamento_activo == 'Mercaderia' %}btn-warning text-dark{% else %}btn-outline-light text-dark bg-white{% endif %}">
+                    🛒 Mercadería
+                </a>
+                <a href="/?dep=Forrajeria" 
+                   class="btn btn-seccion fw-bold shadow-sm {% if departamento_activo == 'Forrajeria' %}btn-success text-white{% else %}btn-outline-light text-dark bg-white{% endif %}">
+                    🌾 Forrajería
+                </a>
+            </div>
+
+            <div class="col-md-6">
+                <form method="GET" action="{{ url_for('home') }}" class="input-group shadow-sm">
+                    <input type="hidden" name="dep" value="{{ departamento_activo }}">
+                    <input type="text" name="busqueda" class="form-control rounded-start-pill px-3" placeholder="🔍 Buscar producto en este departamento..." value="{{ request.args.get('busqueda', '') }}">
+                    <button class="btn btn-warning rounded-end-pill px-4 fw-bold text-dark" type="submit">Buscar</button>
+                    {% if request.args.get('busqueda') %}
+                        <a href="{{ url_for('home', dep=departamento_activo) }}" class="btn btn-outline-secondary rounded-pill ms-2">Limpiar</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5" style="position: relative; z-index: 2;">
+        <div class="row">
+            
+            <div class="col-lg-8 mb-4">
+                <h2 class="fw-bold text-dark mb-4">
+                    {% if departamento_activo == 'Mercaderia' %}
+                        Catálogo de Mercadería
+                    {% else %}
+                        Catálogo de Forrajería
+                    {% endif %}
+                </h2>
+                
+                {% if productos_por_categoria %}
+                    {% for categoria, prods in productos_por_categoria.items() %}
+                    <h3 class="fw-bold mt-5 mb-4 titulo-seccion">{{ categoria }}</h3>
+                    
+                    <div class="row g-3">
+                        {% for prod in prods %}
+                        <div class="col-md-6" id="prod_{{ prod.0 }}">
+                            <div class="card h-100 card-producto">
+                                
+                                <div class="p-3 text-center" style="background-color: white; height: 210px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="/static/{{ prod.6 }}" 
+                                         alt="{{ prod.1 }}" 
+                                         style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                </div>
+
+                                <div class="card-body d-flex flex-column justify-content-between p-4">
+                                    <div>
+                                        <h4 class="card-title fw-bold text-dark mb-2">{{ prod.1 }}</h4>
+                                        <p class="precio-tag fw-bold mb-2">${{ prod.2 }}</p>
+                                        <p class="text-muted small mb-3" style="font-size: 0.9rem; line-height: 1.4;">{{ prod.8 }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="mb-3">
+                                            <span class="badge bg-success p-2">Stock: {{ prod.3 }} unidades</span>
+                                        </p>
+
+                                        {% if prod.3 > 0 %}
+                                        <form action="/agregar/{{ prod.0 }}" method="GET" class="mb-2">
+                                            <input type="hidden" name="dep" value="{{ departamento_activo }}">
+                                            
+                                            <!-- Selector de Presentación con género dinámico -->
+                                            {% if prod.9 == 1 %}
+                                            <div class="mb-2">
+                                                <label class="form-label small fw-bold text-muted mb-1">Presentación ({{ prod.10 }}):</label>
+                                                <select name="tipo_pack" class="form-select form-select-sm fw-bold">
+                                                    <option value="entero">{{ prod.10 }} Entero</option>
+                                                    <option value="medio">
+                                                        {% set u = prod.10 | lower %}
+                                                        {% if u.endswith('a') or 'bolsa' in u or 'lata' in u %}Media{% else %}Medio{% endif %} {{ prod.10 }}
+                                                    </option>
+                                                </select>
+                                            </div>
+                                            {% endif %}
+
+                                            {% if prod.4 != "" %}
+                                            <div class="mb-2">
+                                                <label class="form-label small fw-bold text-muted mb-1">Elegir sabor:</label>
+                                                <select name="sabor" class="form-select form-select-sm">
+                                                    {% for sabor in prod.4.split(',') %}
+                                                    <option value="{{ sabor.strip() }}">{{ sabor.strip() }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            {% endif %}
+
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted mb-1">Cantidad:</label>
+                                                <select name="cantidad" class="form-select form-select-sm">
+                                                    {% set max_cantidad = prod.3 if prod.3 < 10 else 10 %}
+                                                    {% for i in range(1, max_cantidad + 1) %}
+                                                    <option value="{{ i }}">{{ i }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-warning fw-bold">
+                                                    🛒 Agregar al Carrito
+                                                </button>
+                                            </div>
+                                        </form>
+                                        {% else %}
+                                        <div class="d-grid">
+                                            <button class="btn btn-secondary fw-bold" disabled>
+                                                ❌ Sin Stock
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center bg-white p-5 rounded-4 shadow-sm">
+                        <p class="fs-4 text-muted">No se encontraron productos con esa búsqueda o sección.</p>
+                        <p class="small text-muted">¡Intenta con otro término!</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-4">
+                <div class="carrito-container p-4 sticky-top" style="top: 20px;">
+                    <h3 class="fw-bold text-dark mb-4">🛒 Tu Pedido</h3>
+                    
+                    {% if items_carrito %}
+                        <ul class="list-group list-group-flush mb-4">
+                            {% for item in items_carrito %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3" style="background-color: transparent;">
+                                <div>
+                                    <span class="fw-bold">{{ item.nombre }}</span><br>
+                                    <small class="text-muted">${{ item.precio }} c/u</small>
+                                </div>
+                                <span class="badge bg-dark rounded-pill fs-6">x{{ item.cantidad }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <span class="fs-4 fw-bold">Total:</span>
+                            <span class="fs-3 fw-bold text-success">${{ subtotal }}</span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a href="/confirmar-pedido" class="btn btn-success btn-lg fw-bold p-3 w-100">
+                                📱 Confirmar Compra (WhatsApp)
+                            </a>
+                            <a href="/vaciar?dep={{ departamento_activo }}" class="btn btn-outline-danger btn-sm mt-2">
+                                Vaciar Carrito
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <p class="fs-5">Tu carrito está vacío.</p>
+                            <p class="small">¡Agrega productos del catálogo para armar tu pedido!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
