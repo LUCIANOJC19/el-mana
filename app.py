@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask import Flask, redirect, render_template, request, session, url_for
-import mysql.connector
+import sqlite3
 import urllib.parse
 import os
 import csv
@@ -10,11 +10,14 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = "el_mana_clave_secreta_muy_segura"
 
+# Archivo donde SQLite guardará toda la base de datos
+DB_NAME = "negocio_mana.db"
 
 def obtener_conexion():
-    return mysql.connector.connect(
-        host="localhost", user="root", password="", database="negocio_mana"
-    )
+    conexion = sqlite3.connect(DB_NAME)
+    # Esto permite acceder a las columnas por nombre (tipo diccionario) si hace falta
+    conexion.row_factory = sqlite3.Row
+    return conexion
 
 
 def normalizar(texto):
@@ -53,7 +56,7 @@ def home():
         config = cursor.fetchone()
 
         if config:
-            monto_minimo, radio_km = config
+            monto_minimo, radio_km = config["monto_minimo"], config["radio_km"]
         else:
             monto_minimo = 60000
             radio_km = 10
@@ -67,19 +70,20 @@ def home():
         conexion.close()
 
         productos_procesados = list()
-        for (
-            p_id,
-            p_nombre,
-            p_precio,
-            p_stock,
-            p_sabores,
-            p_categoria,
-            p_imagen,
-            p_departamento,
-            p_descripcion,
-            p_permite_medio,
-            p_nombre_unidad,
-        ) in productos:
+        for prod in productos:
+            (
+                p_id,
+                p_nombre,
+                p_precio,
+                p_stock,
+                p_sabores,
+                p_categoria,
+                p_imagen,
+                p_departamento,
+                p_descripcion,
+                p_permite_medio,
+                p_nombre_unidad,
+            ) = prod
             sabores_seguros = p_sabores if p_sabores else ""
             categoria_segura = p_categoria if p_categoria else "Otros"
             imagen_segura = p_imagen if p_imagen else "logo.npg.jpeg"
@@ -271,21 +275,21 @@ def confirmar_pedido():
 
         cursor.execute("SELECT monto_minimo, radio_km FROM configuracion LIMIT 1")
         config = cursor.fetchone()
-        monto_minimo = config[0] if config else 60000
-        radio_km = config[1] if config else 10
+        monto_minimo = config["monto_minimo"] if config else 60000
+        radio_km = config["radio_km"] if config else 10
         envio_gratis = subtotal >= monto_minimo
 
         fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         cursor.execute(
-            "INSERT INTO pedidos (fecha, productos, total, cliente_nombre, cliente_direccion) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO pedidos (fecha, productos, total, cliente_nombre, cliente_direccion) VALUES (?, ?, ?, ?, ?)",
             (fecha_actual, detalle_texto, subtotal, "Cliente Web", "A coordinar"),
         )
         pedido_id = cursor.lastrowid
 
         for item in items_a_guardar:
             cursor.execute(
-                "INSERT INTO detalle_pedido (pedido_id, producto_nombre, cantidad, precio_unitario) VALUES (%s, %s, %s, %s)",
+                "INSERT INTO detalle_pedido (pedido_id, producto_nombre, cantidad, precio_unitario) VALUES (?, ?, ?, ?)",
                 (pedido_id, item["nombre"], item["cantidad"], item["precio_unitario"])
             )
 
@@ -368,7 +372,7 @@ def agregar_producto():
             conexion = obtener_conexion()
             cursor = conexion.cursor()
             cursor.execute(
-                "INSERT INTO mercaderia (nombre, precio, stock, sabores, categoria, imagen, departamento, descripcion, permite_medio_pack, nombre_unidad) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "INSERT INTO mercaderia (nombre, precio, stock, sabores, categoria, imagen, departamento, descripcion, permite_medio_pack, nombre_unidad) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     nombre,
                     precio,
@@ -473,7 +477,7 @@ def editar_producto(id_prod):
             if not nombre_unidad:
                 nombre_unidad = "Pack"
 
-            cursor.execute("SELECT imagen FROM mercaderia WHERE id = %s", (id_prod,))
+            cursor.execute("SELECT imagen FROM mercaderia WHERE id = ?", (id_prod,))
             prod_actual = cursor.fetchone()
             imagen_final = prod_actual[0] if prod_actual else "logo.npg.jpeg"
 
@@ -488,8 +492,8 @@ def editar_producto(id_prod):
 
             cursor.execute(
                 """UPDATE mercaderia 
-                   SET nombre = %s, precio = %s, stock = %s, sabores = %s, categoria = %s, imagen = %s, departamento = %s, descripcion = %s, permite_medio_pack = %s, nombre_unidad = %s 
-                   WHERE id = %s""",
+                   SET nombre = ?, precio = ?, stock = ?, sabores = ?, categoria = ?, imagen = ?, departamento = ?, descripcion = ?, permite_medio_pack = ?, nombre_unidad = ? 
+                   WHERE id = ?""",
                 (
                     nombre,
                     precio,
@@ -510,7 +514,7 @@ def editar_producto(id_prod):
             return redirect(url_for("listar_productos_admin"))
 
         cursor.execute(
-            "SELECT id, nombre, precio, stock, sabores, categoria, imagen, departamento, descripcion, permite_medio_pack, nombre_unidad FROM mercaderia WHERE id = %s",
+            "SELECT id, nombre, precio, stock, sabores, categoria, imagen, departamento, descripcion, permite_medio_pack, nombre_unidad FROM mercaderia WHERE id = ?",
             (id_prod,),
         )
         producto = cursor.fetchone()
@@ -534,7 +538,7 @@ def eliminar_producto(id_prod):
     try:
         conexion = obtener_conexion()
         cursor = conexion.cursor()
-        cursor.execute("DELETE FROM mercaderia WHERE id = %s", (id_prod,))
+        cursor.execute("DELETE FROM mercaderia WHERE id = ?", (id_prod,))
         conexion.commit()
         cursor.close()
         conexion.close()
@@ -581,14 +585,14 @@ def login():
             conexion = obtener_conexion()
             cursor = conexion.cursor()
             cursor.execute(
-                "SELECT usuario, contrasena FROM usuarios WHERE usuario = %s",
+                "SELECT usuario, contrasena FROM usuarios WHERE usuario = ?",
                 (usuario,),
             )
             user = cursor.fetchone()
             cursor.close()
             conexion.close()
 
-            if user and user[1] == contrasena:
+            if user and user["contrasena"] == contrasena:
                 session["admin"] = usuario
                 return redirect(url_for("admin"))
             else:
@@ -620,7 +624,7 @@ def admin():
         config = cursor.fetchone()
 
         if config:
-            monto_minimo, radio_km = config
+            monto_minimo, radio_km = config["monto_minimo"], config["radio_km"]
         else:
             monto_minimo = 60000
             radio_km = 10
@@ -673,7 +677,7 @@ def guardar_config():
             conexion = obtener_conexion()
             cursor = conexion.cursor()
             cursor.execute(
-                "UPDATE configuracion SET monto_minimo = %s, radio_km = %s WHERE id = 1",
+                "UPDATE configuracion SET monto_minimo = ?, radio_km = ? WHERE id = 1",
                 (nuevo_monto, nuevo_radio),
             )
             conexion.commit()
@@ -692,7 +696,7 @@ def listar_pedidos():
         return redirect(url_for('login'))
     
     conexion = obtener_conexion()
-    cursor = conexion.cursor(dictionary=True)
+    cursor = conexion.cursor()
     cursor.execute("SELECT * FROM pedidos ORDER BY fecha DESC")
     pedidos = cursor.fetchall()
     conexion.close()
@@ -706,12 +710,12 @@ def ver_boleta(id_pedido):
         return redirect(url_for('login'))
     
     conexion = obtener_conexion()
-    cursor = conexion.cursor(dictionary=True)
+    cursor = conexion.cursor()
     
-    cursor.execute("SELECT * FROM pedidos WHERE id = %s", (id_pedido,))
+    cursor.execute("SELECT * FROM pedidos WHERE id = ?", (id_pedido,))
     pedido = cursor.fetchone()
     
-    cursor.execute("SELECT producto_nombre, cantidad, precio_unitario FROM detalle_pedido WHERE pedido_id = %s", (id_pedido,))
+    cursor.execute("SELECT producto_nombre, cantidad, precio_unitario FROM detalle_pedido WHERE pedido_id = ?", (id_pedido,))
     detalles = cursor.fetchall()
     
     conexion.close()
@@ -727,8 +731,9 @@ def limpiar_pedidos_anteriores():
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     
-    cursor.execute("DELETE FROM detalle_pedido WHERE pedido_id IN (SELECT id FROM pedidos WHERE DATE(fecha) < CURDATE())")
-    cursor.execute("DELETE FROM pedidos WHERE DATE(fecha) < CURDATE()")
+    # En SQLite usamos date('now') en lugar de CURDATE()
+    cursor.execute("DELETE FROM detalle_pedido WHERE pedido_id IN (SELECT id FROM pedidos WHERE date(fecha) < date('now'))")
+    cursor.execute("DELETE FROM pedidos WHERE date(fecha) < date('now')")
     
     conexion.commit()
     conexion.close()
@@ -795,18 +800,18 @@ def crear_boleta_manual():
             return redirect(url_for('crear_boleta_manual'))
 
         cursor.execute(
-            "INSERT INTO pedidos (fecha, productos, total, cliente_nombre, cliente_direccion) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO pedidos (fecha, productos, total, cliente_nombre, cliente_direccion) VALUES (?, ?, ?, ?, ?)",
             (fecha_actual, detalle_texto, subtotal, cliente_nombre, cliente_direccion),
         )
         pedido_id = cursor.lastrowid
 
         for item in items_a_procesar:
             cursor.execute(
-                "INSERT INTO detalle_pedido (pedido_id, producto_nombre, cantidad, precio_unitario) VALUES (%s, %s, %s, %s)",
+                "INSERT INTO detalle_pedido (pedido_id, producto_nombre, cantidad, precio_unitario) VALUES (?, ?, ?, ?)",
                 (pedido_id, item["nombre"], item["cantidad"], item["precio_unitario"])
             )
             cursor.execute(
-                "UPDATE mercaderia SET stock = %s WHERE id = %s",
+                "UPDATE mercaderia SET stock = ? WHERE id = ?",
                 (item["nuevo_stock"], item["id"])
             )
 
@@ -850,7 +855,7 @@ def gestionar_usuarios():
         if nuevo_usuario and nueva_contrasena:
             try:
                 cursor.execute(
-                    "INSERT INTO usuarios (usuario, contrasena) VALUES (%s, %s)",
+                    "INSERT INTO usuarios (usuario, contrasena) VALUES (?, ?)",
                     (nuevo_usuario, nueva_contrasena)
                 )
                 conexion.commit()
@@ -877,7 +882,7 @@ def eliminar_usuario(id_user):
     try:
         conexion = obtener_conexion()
         cursor = conexion.cursor()
-        cursor.execute("DELETE FROM usuarios WHERE id = %s", (id_user,))
+        cursor.execute("DELETE FROM usuarios WHERE id = ?", (id_user,))
         conexion.commit()
         cursor.close()
         conexion.close()
@@ -938,7 +943,7 @@ def importar_csv():
                     cursor.execute(
                         """INSERT INTO mercaderia 
                            (nombre, precio, stock, sabores, categoria, imagen, departamento, descripcion, permite_medio_pack, nombre_unidad) 
-                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         (
                             nombre,
                             precio,
