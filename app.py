@@ -13,6 +13,85 @@ app.secret_key = "el_mana_clave_secreta_muy_segura"
 # Archivo donde SQLite guardará toda la base de datos
 DB_NAME = "negocio_mana.db"
 
+def inicializar_base_datos():
+    """Crea las tablas y valores iniciales si la base de datos no existe o está vacía."""
+    conexion = sqlite3.connect(DB_NAME)
+    cursor = conexion.cursor()
+
+    # Tabla de mercadería / productos
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS mercaderia (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            precio REAL NOT NULL,
+            stock INTEGER DEFAULT 0,
+            sabores TEXT,
+            categoria TEXT,
+            imagen TEXT,
+            departamento TEXT,
+            descripcion TEXT,
+            permite_medio_pack INTEGER DEFAULT 0,
+            nombre_unidad TEXT DEFAULT 'Pack'
+        )
+    """)
+
+    # Tabla de configuración de envíos y montos mínimos
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS configuracion (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            monto_minimo REAL NOT NULL,
+            radio_km REAL NOT NULL
+        )
+    """)
+
+    # Insertar configuración inicial por defecto si está vacía
+    cursor.execute("SELECT COUNT(*) FROM configuracion")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO configuracion (monto_minimo, radio_km) VALUES (?, ?)", (60000, 10))
+
+    # Tabla de pedidos
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS pedidos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT NOT NULL,
+            productos TEXT NOT NULL,
+            total REAL NOT NULL,
+            cliente_nombre TEXT,
+            cliente_direccion TEXT
+        )
+    """)
+
+    # Tabla de detalle de cada pedido
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS detalle_pedido (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER,
+            producto_nombre TEXT NOT NULL,
+            cantidad INTEGER NOT NULL,
+            precio_unitario REAL NOT NULL,
+            FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
+        )
+    """)
+
+    # Tabla de usuarios administradores
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario TEXT UNIQUE NOT NULL,
+            contrasena TEXT NOT NULL
+        )
+    """)
+
+    # Crear un usuario administrador por defecto si no existe ninguno
+    cursor.execute("SELECT COUNT(*) FROM usuarios")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO usuarios (usuario, contrasena) VALUES (?, ?)", ("admin", "admin123"))
+
+    conexion.commit()
+    cursor.close()
+    conexion.close()
+
+
 def obtener_conexion():
     conexion = sqlite3.connect(DB_NAME)
     # Esto permite acceder a las columnas por nombre (tipo diccionario) si hace falta
@@ -731,7 +810,6 @@ def limpiar_pedidos_anteriores():
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     
-    # En SQLite usamos date('now') en lugar de CURDATE()
     cursor.execute("DELETE FROM detalle_pedido WHERE pedido_id IN (SELECT id FROM pedidos WHERE date(fecha) < date('now'))")
     cursor.execute("DELETE FROM pedidos WHERE date(fecha) < date('now')")
     
@@ -969,4 +1047,9 @@ def importar_csv():
 
 
 if __name__ == "__main__":
+    # Inicializar la base de datos automáticamente al correr de forma local
+    inicializar_base_datos()
     app.run(debug=True)
+else:
+    # Esto se ejecuta automáticamente cuando Render arranca la app con Gunicorn
+    inicializar_base_datos()
