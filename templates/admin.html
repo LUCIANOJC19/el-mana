@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Gestión - El Mana</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-image: linear-gradient(rgba(244, 246, 249, 0.4), rgba(244, 246, 249, 0.4)), 
+                              url('/static/campo.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-custom {
+            background-color: #e67e22;
+        }
+        .admin-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+        .metric-card {
+            border: none;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark navbar-custom mb-5 shadow-sm py-3">
+        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <span class="navbar-brand fw-bold fs-3 m-0">
+                <i class="fa-solid fa-gears"></i> Panel de Gestión - El Maná
+            </span>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a href="{{ url_for('importar_csv') }}" class="btn btn-light text-success rounded-pill fw-bold shadow-sm px-3">
+                    <i class="fa-solid fa-file-csv"></i> Importar CSV
+                </a>
+                <a href="{{ url_for('gestionar_usuarios') }}" class="btn btn-dark text-white rounded-pill fw-bold shadow-sm px-3">
+                    <i class="fa-solid fa-users-gear"></i> Usuarios
+                </a>
+                <a href="{{ url_for('crear_boleta_manual') }}" class="btn btn-success rounded-pill fw-bold shadow-sm px-3">
+                    <i class="fa-solid fa-receipt"></i> Boleta Manual
+                </a>
+                <a href="{{ url_for('listar_pedidos') }}" class="btn btn-secondary rounded-pill fw-bold shadow-sm px-3">
+                    <i class="fa-solid fa-clipboard-list"></i> Historial
+                </a>
+                <a href="{{ url_for('listar_productos_admin') }}" class="btn btn-warning text-dark rounded-pill fw-bold shadow-sm px-3">
+                    <i class="fa-solid fa-box-open"></i> Productos
+                </a>
+                <a href="/" class="btn btn-outline-light rounded-pill px-3">
+                    <i class="fa-solid fa-store"></i> Catálogo
+                </a>
+                <a href="/logout" class="btn btn-danger rounded-pill px-3">
+                    <i class="fa-solid fa-right-from-bracket"></i> Salir
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+        
+        <div class="row g-3 mb-5">
+            <div class="col-md-4">
+                <div class="metric-card bg-success p-4">
+                    <h5 class="fw-bold opacity-75">Ganancias Totales</h5>
+                    <h2 class="fw-bold m-0">${{ total_ganancias }}</h2>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="metric-card bg-primary p-4">
+                    <h5 class="fw-bold opacity-75">Pedidos Registrados</h5>
+                    <h2 class="fw-bold m-0">{{ total_pedidos }}</h2>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="metric-card bg-warning text-dark p-4">
+                    <h5 class="fw-bold opacity-75">Alertas de Stock Bajo (&lt;= 5)</h5>
+                    <h2 class="fw-bold m-0">{{ stock_bajo }} unidades</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card admin-card p-4">
+                    <h3 class="fw-bold text-dark mb-3">🚚 Ajustar Límites de Envío a Domicilio</h3>
+                    <p class="text-muted small mb-4">Modifica estas cifras para cambiar de forma automática el envío gratis en todo el catálogo de tus clientes.</p>
+                    
+                    <form action="/admin/guardar-config" method="POST">
+                        <div class="row align-items-end">
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label fw-bold text-muted small">Compra Mínima para Envío Gratis ($)</label>
+                                <input type="number" name="monto_minimo" class="form-control form-control-lg fw-bold text-success" value="{{ monto_minimo }}" required>
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label fw-bold text-muted small">Radio de Cobertura Máximo (Kilómetros)</label>
+                                <input type="number" name="radio_km" class="form-control form-control-lg fw-bold text-dark" value="{{ radio_km }}" required>
+                            </div>
+                            <div class="col-md-2 mb-3 d-grid">
+                                <button type="submit" class="btn btn-warning btn-lg fw-bold text-dark p-3 rounded-pill shadow-sm">
+                                    💾 Guardar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="classes row">
+            <div class="col-12">
+                <div class="card admin-card p-4">
+                    <h3 class="fw-bold text-dark mb-4">📋 Historial de Pedidos por WhatsApp</h3>
+                    {% if pedidos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Fecha y Hora</th>
+                                    <th>Cliente</th>
+                                    <th>Dirección</th>
+                                    <th>Detalle de Productos</th>
+                                    <th>Monto Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ped in pedidos %}
+                                <tr>
+                                    <td>{{ ped[1] }}</td>
+                                    <td class="fw-bold text-secondary">{{ ped[4] }}</td>
+                                    <td>{{ ped[5] }}</td>
+                                    <td>
+                                        <pre class="m-0" style="font-family: inherit; font-size: 0.9rem; line-height: 1.4;">{{ ped[2] }}</pre>
+                                    </td>
+                                    <td class="fw-bold text-success fs-5">${{ ped[3] }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <p class="fs-4 m-0">Aún no se han registrado pedidos desde la web.</p>
+                        <p class="small">¡Cuando tus clientes confirmen una compra, aparecerá registrada aquí!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

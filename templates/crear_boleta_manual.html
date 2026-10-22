@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Boleta Manual - El Mana</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-custom {
+            background-color: #e67e22;
+        }
+        .card-custom {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark navbar-custom mb-4 shadow-sm py-3">
+        <div class="container justify-content-between align-items-center">
+            <span class="navbar-brand fw-bold fs-3">🧾 Venta de Mostrador - Creación de Boleta</span>
+            <div>
+                <a href="{{ url_for('admin') }}" class="btn btn-dark rounded-pill fw-bold shadow-sm">⬅ Volver al Panel</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+        
+        <!-- FORMULARIO DE BÚSQUEDA (Procesado por Python) -->
+        <div class="card card-custom p-4 mb-4">
+            <form method="GET" action="{{ url_for('crear_boleta_manual') }}">
+                <label class="form-label fw-bold text-dark fs-5">🔍 Buscar Producto en el Inventario</label>
+                <div class="input-group">
+                    <input type="text" name="busqueda" class="form-control form-control-lg" placeholder="Escribe el nombre o categoría (ej: Maíz, Fardo...)" value="{{ busqueda_actual }}">
+                    <button class="btn btn-warning fw-bold px-4 text-dark" type="submit">Buscar</button>
+                    {% if busqueda_actual %}
+                        <a href="{{ url_for('crear_boleta_manual') }}" class="btn btn-outline-secondary">Limpiar</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <form action="{{ url_for('crear_boleta_manual') }}" method="POST">
+            
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card card-custom p-3 h-100">
+                        <label class="form-label fw-bold text-muted small">👤 Nombre del Cliente / Referencia</label>
+                        <input type="text" name="cliente_nombre" class="form-control" value="Cliente Mostrador" required>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card card-custom p-3 h-100">
+                        <label class="form-label fw-bold text-muted small">📍 Dirección o Tipo de Venta</label>
+                        <input type="text" name="cliente_direccion" class="form-control" value="Tienda Física" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-custom p-4 mb-4">
+                <h3 class="fw-bold text-dark mb-3">📦 Selecciona las cantidades vendidas</h3>
+                <p class="text-muted small">Ingresa la cantidad que lleva el cliente de los productos listados abajo. Puedes marcar si es medio pack.</p>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Producto</th>
+                                <th>Categoría</th>
+                                <th>Precio Unitario</th>
+                                <th>Stock Disponible</th>
+                                <th style="width: 250px;">Cantidad y Presentación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if productos %}
+                                {% for prod in productos %}
+                                <tr>
+                                    <td class="fw-bold text-secondary">
+                                        {{ prod[1] }} {% if prod[4] %}<span class="text-muted small">({{ prod[4] }})</span>{% endif %}
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ prod[5] }}</span></td>
+                                    <td class="text-success fw-bold">${{ prod[2] }}</td>
+                                    <td>
+                                        {% if prod[3] <= 5 %}
+                                            <span class="badge bg-danger">{{ prod[3] }} un. (Bajo)</span>
+                                        {% else %}
+                                            <span class="badge bg-success">{{ prod[3] }} un.</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <input type="hidden" name="producto_id_{{ prod[0] }}" value="{{ prod[0] }}">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="number" name="cantidad_{{ prod[0] }}" class="form-control text-center fw-bold" value="0" min="0" max="{{ prod[3] }}" style="width: 80px;">
+                                            
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="medio_pack_{{ prod[0] }}" id="medio_{{ prod[0] }}">
+                                                <label class="form-check-label small fw-bold text-muted" for="medio_{{ prod[0] }}">
+                                                    Medio Pack
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">No se encontraron productos con ese nombre o categoría.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 col-md-6 mx-auto mb-5">
+                <button type="submit" class="btn btn-success btn-lg fw-bold p-3 rounded-pill shadow">
+                    💾 Registrar Venta, Descontar Stock y Generar Boleta
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</body>
+</html>

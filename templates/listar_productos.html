@@ -1,0 +1,125 @@
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Productos - El Mana</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: linear-gradient(rgba(244, 246, 249, 0.4), rgba(244, 246, 249, 0.4)), 
+                              url('/static/campo.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-custom { background-color: #e67e22; }
+        .admin-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark navbar-custom mb-4 shadow-sm py-3">
+        <div class="container justify-content-between align-items-center">
+            <span class="navbar-brand fw-bold fs-2">📦 Catálogo de Productos - El Mana</span>
+            <div>
+                <a href="{{ url_for('admin') }}" class="btn btn-outline-light rounded-pill me-2 fw-bold">⬅️ Volver al Panel</a>
+                <a href="{{ url_for('agregar_producto') }}" class="btn btn-warning rounded-pill text-dark fw-bold me-2">➕ Agregar Producto</a>
+                <a href="/logout" class="btn btn-danger rounded-pill">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+        <div class="card admin-card p-4">
+            <h3 class="fw-bold text-dark mb-2">Listado de productos por departamentos y categorías</h3>
+            <p class="text-muted small mb-4">Administración estructurada de precios, stock y borrado de artículos.</p>
+
+            <!-- Buscador en Administración -->
+            <div class="row justify-content-center mb-4">
+                <div class="col-md-6">
+                    <form method="GET" action="{{ url_for('listar_productos_admin') }}" class="input-group shadow-sm">
+                        <input type="text" name="busqueda" class="form-control rounded-start-pill px-3" placeholder="🔍 Buscar producto por nombre o categoría..." value="{{ request.args.get('busqueda', '') }}">
+                        <button class="btn btn-warning rounded-end-pill px-4 fw-bold text-dark" type="submit">Buscar</button>
+                        {% if request.args.get('busqueda') %}
+                            <a href="{{ url_for('listar_productos_admin') }}" class="btn btn-outline-secondary rounded-pill ms-2">Limpiar</a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Botones de selección de departamento arriba -->
+            <div class="d-flex justify-content-center gap-3 mb-4">
+                <a href="#depto_mercaderia" class="btn btn-outline-dark fw-bold px-4 py-2 rounded-pill">🛒 Mercadería</a>
+                <a href="#depto_forrajeria" class="btn btn-outline-dark fw-bold px-4 py-2 rounded-pill">🌾 Forrajería</a>
+            </div>
+
+            {% for depto, categorias in productos_agrupados.items() %}
+                {% if categorias %}
+                    <div id="depto_{{ depto|lower }}" style="padding-top: 20px;"></div>
+
+                    <div class="mt-4 mb-3 p-3 rounded bg-dark text-white">
+                        <h4 class="m-0">🏢 Departamento: {{ '🛒 Mercadería' if depto == 'Mercaderia' else '🌾 Forrajería' }}</h4>
+                    </div>
+
+                    {% for categoria, lista_prods in categorias.items() %}
+                        <div class="card mb-4 shadow-sm border-0">
+                            <div class="card-header bg-secondary text-white fw-bold">
+                                Categoría: {{ categoria }}
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Nombre</th>
+                                                <th>Precio</th>
+                                                <th>Stock</th>
+                                                <th>Sabores</th>
+                                                <th class="text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for prod in lista_prods %}
+                                            <tr>
+                                                <td>{{ prod[0] }}</td>
+                                                <td class="fw-bold text-secondary">{{ prod[1] }}</td>
+                                                <td class="fw-bold text-success">${{ prod[2] }}</td>
+                                                <td>
+                                                    {% if prod[3] <= 5 %}
+                                                        <span class="badge bg-danger">{{ prod[3] }} (Bajo)</span>
+                                                    {% else %}
+                                                        <span class="badge bg-success">{{ prod[3] }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td><small class="text-muted">{{ prod[4] if prod[4] else '-' }}</small></td>
+                                                <td class="text-center">
+                                                    <a href="{{ url_for('editar_producto', id_prod=prod[0]) }}" class="btn btn-sm btn-warning fw-bold px-3 rounded-pill me-1">
+                                                        ✏️ Editar
+                                                    </a>
+                                                    <a href="{{ url_for('eliminar_producto', id_prod=prod[0]) }}" class="btn btn-sm btn-danger fw-bold px-3 rounded-pill" onclick="return confirm('¿Estás seguro de que querés eliminar {{ prod[1] }}?');">
+                                                        🗑️ Borrar
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+
+        </div>
+    </div>
+
+</body>
+</html>
