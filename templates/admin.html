@@ -30,6 +30,21 @@
             color: white;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
+
+        /* Ajuste responsivo solo para pantallas pequeñas */
+        @media (max-width: 991px) {
+            .nav-buttons-container {
+                overflow-x: auto;
+                white-space: nowrap;
+                flex-wrap: nowrap !important;
+                padding-bottom: 5px;
+                width: 100%;
+                -webkit-overflow-scrolling: touch;
+            }
+            .nav-buttons-container .btn {
+                flex-shrink: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -39,7 +54,7 @@
             <span class="navbar-brand fw-bold fs-3 m-0">
                 <i class="fa-solid fa-gears"></i> Panel de Gestión - El Maná
             </span>
-            <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 nav-buttons-container">
                 <a href="{{ url_for('importar_csv') }}" class="btn btn-light text-success rounded-pill fw-bold shadow-sm px-3">
                     <i class="fa-solid fa-file-csv"></i> Importar CSV
                 </a>
@@ -68,20 +83,20 @@
     <div class="container mb-5">
         
         <div class="row g-3 mb-5">
-            <div class="col-md-4">
-                <div class="metric-card bg-success p-4">
+            <div class="col-12 col-md-4">
+                <div class="metric-card bg-success p-4 h-100">
                     <h5 class="fw-bold opacity-75">Ganancias Totales</h5>
                     <h2 class="fw-bold m-0">${{ total_ganancias }}</h2>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="metric-card bg-primary p-4">
+            <div class="col-12 col-md-4">
+                <div class="metric-card bg-primary p-4 h-100">
                     <h5 class="fw-bold opacity-75">Pedidos Registrados</h5>
                     <h2 class="fw-bold m-0">{{ total_pedidos }}</h2>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="metric-card bg-warning text-dark p-4">
+            <div class="col-12 col-md-4">
+                <div class="metric-card bg-warning text-dark p-4 h-100">
                     <h5 class="fw-bold opacity-75">Alertas de Stock Bajo (&lt;= 5)</h5>
                     <h2 class="fw-bold m-0">{{ stock_bajo }} unidades</h2>
                 </div>
@@ -96,15 +111,15 @@
                     
                     <form action="/admin/guardar-config" method="POST">
                         <div class="row align-items-end">
-                            <div class="col-md-5 mb-3">
+                            <div class="col-12 col-md-5 mb-3">
                                 <label class="form-label fw-bold text-muted small">Compra Mínima para Envío Gratis ($)</label>
                                 <input type="number" name="monto_minimo" class="form-control form-control-lg fw-bold text-success" value="{{ monto_minimo }}" required>
                             </div>
-                            <div class="col-md-5 mb-3">
+                            <div class="col-12 col-md-5 mb-3">
                                 <label class="form-label fw-bold text-muted small">Radio de Cobertura Máximo (Kilómetros)</label>
                                 <input type="number" name="radio_km" class="form-control form-control-lg fw-bold text-dark" value="{{ radio_km }}" required>
                             </div>
-                            <div class="col-md-2 mb-3 d-grid">
+                            <div class="col-12 col-md-2 mb-3 d-grid">
                                 <button type="submit" class="btn btn-warning btn-lg fw-bold text-dark p-3 rounded-pill shadow-sm">
                                     💾 Guardar
                                 </button>
