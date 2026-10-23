@@ -19,15 +19,28 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             background-color: #ffffff;
         }
+        /* Ajustes responsivos para celulares */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.1rem !important;
+            }
+            .table th, .table td {
+                white-space: nowrap;
+                font-size: 0.85rem;
+            }
+            .card-custom {
+                padding: 1rem !important;
+            }
+        }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-dark navbar-custom mb-4 shadow-sm py-3">
-        <div class="container justify-content-between align-items-center">
-            <span class="navbar-brand fw-bold fs-3">🧾 Venta de Mostrador - Creación de Boleta</span>
+        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span class="navbar-brand fw-bold fs-3 mb-0">🧾 Venta de Mostrador</span>
             <div>
-                <a href="{{ url_for('admin') }}" class="btn btn-dark rounded-pill fw-bold shadow-sm">⬅ Volver al Panel</a>
+                <a href="{{ url_for('admin') }}" class="btn btn-dark btn-sm rounded-pill fw-bold shadow-sm px-3">⬅ Volver al Panel</a>
             </div>
         </div>
     </nav>
@@ -40,7 +53,7 @@
                 <label class="form-label fw-bold text-dark fs-5">🔍 Buscar Producto en el Inventario</label>
                 <div class="input-group">
                     <input type="text" name="busqueda" class="form-control form-control-lg" placeholder="Escribe el nombre o categoría (ej: Maíz, Fardo...)" value="{{ busqueda_actual }}">
-                    <button class="btn btn-warning fw-bold px-4 text-dark" type="submit">Buscar</button>
+                    <button class="btn btn-warning fw-bold px-3 px-md-4 text-dark" type="submit">Buscar</button>
                     {% if busqueda_actual %}
                         <a href="{{ url_for('crear_boleta_manual') }}" class="btn btn-outline-secondary">Limpiar</a>
                     {% endif %}
@@ -50,34 +63,34 @@
 
         <form action="{{ url_for('crear_boleta_manual') }}" method="POST">
             
-            <div class="row mb-4">
-                <div class="col-md-6 mb-3">
+            <div class="row mb-3 mb-md-4 g-2 g-md-3">
+                <div class="col-12 col-md-6 mb-2 mb-md-0">
                     <div class="card card-custom p-3 h-100">
-                        <label class="form-label fw-bold text-muted small">👤 Nombre del Cliente / Referencia</label>
+                        <label class="form-label fw-bold text-muted small mb-1">👤 Nombre del Cliente / Referencia</label>
                         <input type="text" name="cliente_nombre" class="form-control" value="Cliente Mostrador" required>
                     </div>
                 </div>
-                <div class="col-md-6 mb-3">
+                <div class="col-12 col-md-6 mb-2 mb-md-0">
                     <div class="card card-custom p-3 h-100">
-                        <label class="form-label fw-bold text-muted small">📍 Dirección o Tipo de Venta</label>
+                        <label class="form-label fw-bold text-muted small mb-1">📍 Dirección o Tipo de Venta</label>
                         <input type="text" name="cliente_direccion" class="form-control" value="Tienda Física" required>
                     </div>
                 </div>
             </div>
 
-            <div class="card card-custom p-4 mb-4">
-                <h3 class="fw-bold text-dark mb-3">📦 Selecciona las cantidades vendidas</h3>
-                <p class="text-muted small">Ingresa la cantidad que lleva el cliente de los productos listados abajo. Puedes marcar si es medio pack.</p>
+            <div class="card card-custom p-3 p-md-4 mb-4">
+                <h3 class="fw-bold text-dark mb-2 fs-4 fs-md-3">📦 Selecciona las cantidades vendidas</h3>
+                <p class="text-muted small mb-3">Ingresa la cantidad que lleva el cliente de los productos listados abajo. Puedes marcar si es medio pack.</p>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle mb-0">
                         <thead class="table-dark">
                             <tr>
                                 <th>Producto</th>
                                 <th>Categoría</th>
                                 <th>Precio Unitario</th>
                                 <th>Stock Disponible</th>
-                                <th style="width: 250px;">Cantidad y Presentación</th>
+                                <th style="min-width: 220px;">Cantidad y Presentación</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -99,9 +112,9 @@
                                     <td>
                                         <input type="hidden" name="producto_id_{{ prod[0] }}" value="{{ prod[0] }}">
                                         <div class="d-flex align-items-center gap-2">
-                                            <input type="number" name="cantidad_{{ prod[0] }}" class="form-control text-center fw-bold" value="0" min="0" max="{{ prod[3] }}" style="width: 80px;">
+                                            <input type="number" name="cantidad_{{ prod[0] }}" class="form-control text-center fw-bold py-1" value="0" min="0" max="{{ prod[3] }}" style="width: 75px;">
                                             
-                                            <div class="form-check">
+                                            <div class="form-check m-0">
                                                 <input class="form-check-input" type="checkbox" name="medio_pack_{{ prod[0] }}" id="medio_{{ prod[0] }}">
                                                 <label class="form-check-label small fw-bold text-muted" for="medio_{{ prod[0] }}">
                                                     Medio Pack
@@ -121,7 +134,7 @@
                 </div>
             </div>
 
-            <div class="d-grid gap-2 col-md-6 mx-auto mb-5">
+            <div class="d-grid gap-2 col-12 col-md-8 col-lg-6 mx-auto mb-5">
                 <button type="submit" class="btn btn-success btn-lg fw-bold p-3 rounded-pill shadow">
                     💾 Registrar Venta, Descontar Stock y Generar Boleta
                 </button>
