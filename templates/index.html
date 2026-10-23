@@ -6,6 +6,9 @@
     <title>El Mana - Catálogo Inteligente</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        html {
+            scroll-behavior: smooth; /* Para que al tocar 'Ver Pedido' baje suavemente */
+        }
         body {
             background-image: linear-gradient(rgba(244, 246, 249, 0.4), rgba(244, 246, 249, 0.4)), 
                                     url('/static/campo.jpeg');
@@ -13,6 +16,7 @@
             background-position: center;
             background-attachment: fixed;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 90px; /* Evita que la barra flotante del celular tape el final de la página */
         }
         .navbar-custom {
             background-color: #e67e22;
@@ -37,7 +41,7 @@
         .perrito-esquina {
             position: absolute;
             bottom: 0;
-            height: 130px;
+            height: 110px;
             z-index: 1;
             mix-blend-mode: multiply;
         }
@@ -60,24 +64,28 @@
             object-fit: cover;
             border: 4px solid white;
         }
-        /* Ajustes específicos para Celulares */
+        
+        /* Ajustes específicos para pantallas pequeñas (Celulares) */
         @media (max-width: 576px) {
             .logo-img {
-                width: 90px;
-                height: 90px;
+                width: 75px;
+                height: 75px;
+            }
+            .perrito-esquina {
+                height: 65px; /* Perritos visibles pero reducidos en celulares */
             }
             .card-body {
                 padding: 10px !important;
             }
             .card-title {
-                font-size: 1rem !important;
+                font-size: 0.95rem !important;
             }
             .precio-tag {
                 font-size: 1.1rem !important;
             }
             .btn-seccion {
-                font-size: 0.95rem;
-                padding: 8px 16px;
+                font-size: 0.9rem;
+                padding: 8px 14px;
             }
         }
     </style>
@@ -101,7 +109,8 @@
     {% endif %}
 
     <nav class="navbar navbar-dark navbar-custom mb-4 shadow-sm py-3" style="overflow: hidden;">
-        <img src="{{ url_for('static', filename='perrito_izq.png.jpeg') }}" alt="Perrito Izquierda" class="perrito-esquina d-none d-md-block" style="left: 10px;">
+        <!-- Perritos visibles en celular y PC -->
+        <img src="{{ url_for('static', filename='perrito_izq.png.jpeg') }}" alt="Perrito Izquierda" class="perrito-esquina" style="left: 5px;">
 
         <div class="container d-flex align-items-center justify-content-center flex-wrap" style="position: relative; z-index: 2;">
             <div class="me-2 me-md-4">
@@ -110,7 +119,7 @@
                 {% endif %}
             </div>
             
-            <a class="navbar-brand fw-bold fs-2 fs-md-1 d-flex align-items-center justify-content-center m-0" href="/" style="text-decoration: none;">
+            <a class="navbar-brand fw-bold fs-3 fs-md-1 d-flex align-items-center justify-content-center m-0" href="/" style="text-decoration: none;">
                 <img src="{{ url_for('static', filename='logo.npg.jpeg') }}" 
                      alt="Logo El Mana" 
                      class="me-2 me-md-3 rounded-circle shadow-lg logo-img">
@@ -126,7 +135,7 @@
             </div>
         </div>
 
-        <img src="{{ url_for('static', filename='perrito_der.png.jpeg') }}" alt="Perrito Derecha" class="perrito-esquina d-none d-md-block" style="right: 10px;">
+        <img src="{{ url_for('static', filename='perrito_der.png.jpeg') }}" alt="Perrito Derecha" class="perrito-esquina" style="right: 5px;">
     </nav>
 
     <div class="container mb-4" style="position: relative; z-index: 2;">
@@ -171,7 +180,6 @@
                     {% for categoria, prods in productos_por_categoria.items() %}
                     <h3 class="fw-bold mt-4 mb-3 titulo-seccion fs-5 fs-md-4">{{ categoria }}</h3>
                     
-                    <!-- col-6 asegura 2 productos por fila en celular -->
                     <div class="row g-2 g-md-3">
                         {% for prod in prods %}
                         <div class="col-6 col-md-6" id="prod_{{ prod.0 }}">
@@ -260,7 +268,7 @@
                 {% endif %}
             </div>
 
-            <!-- Carrito lateral en PC / Sección abajo en Celular -->
+            <!-- Carrito lateral en PC / Sección abajo en Celulares -->
             <div class="col-lg-4" id="seccion-carrito">
                 <div class="carrito-container p-3 p-md-4 sticky-top" style="top: 20px;">
                     <h3 class="fw-bold text-dark mb-3 fs-4 fs-md-3">🛒 Tu Pedido</h3>
@@ -287,7 +295,7 @@
                             <a href="/confirmar-pedido" class="btn btn-success fw-bold p-2 p-md-3 w-100">
                                 📱 Confirmar Compra (WhatsApp)
                             </a>
-                            <a href="/vaciar?dep={{ departamento_activo }}" class="btn btn-outline-danger btn-sm mt-1">
+                            <a href="/vaciar?dep={{ departamento_activo }}" class="btn btn-outline-danger btn-sm mt-1 mb-2">
                                 Vaciar Carrito
                             </a>
                         </div>
@@ -303,14 +311,14 @@
         </div>
     </div>
 
-    <!-- Acceso rápido al Carrito para celulares cuando hay productos -->
+    <!-- Barra de acceso rápido en la parte inferior para celulares -->
     {% if items_carrito %}
-    <div class="d-lg-none fixed-bottom bg-dark text-white p-3 shadow-lg d-flex justify-content-between align-items-center" style="z-index: 1000; border-top: 3px solid #27ae60;">
+    <div class="d-lg-none fixed-bottom bg-dark text-white p-2 px-3 shadow-lg d-flex justify-content-between align-items-center" style="z-index: 1000; border-top: 3px solid #27ae60;">
         <div>
-            <span class="d-block small text-muted">Total acumulado:</span>
+            <span class="d-block text-muted" style="font-size: 0.75rem;">Total acumulado:</span>
             <span class="fw-bold text-success fs-5">${{ subtotal }}</span>
         </div>
-        <a href="#seccion-carrito" class="btn btn-warning fw-bold btn-sm px-3">
+        <a href="#seccion-carrito" class="btn btn-warning fw-bold btn-sm px-3 py-2">
             🛒 Ver Pedido
         </a>
     </div>
